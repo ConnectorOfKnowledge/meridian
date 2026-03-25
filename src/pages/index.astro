@@ -214,16 +214,16 @@ import Layout from '../layouts/Layout.astro';
       weatherData = { ...data, location };
       cacheWeatherData(weatherData);
       saveLocation(location);
-      renderDashboard(weatherData);
       showState('dashboard');
+      renderDashboard(weatherData);
     } catch (err) {
       console.error('Weather fetch error:', err);
       // Try cached data
       const cached = loadCachedWeather();
       if (cached) {
         weatherData = cached;
-        renderDashboard(cached);
         showState('dashboard');
+        renderDashboard(cached);
       } else {
         showState('error');
       }
@@ -278,30 +278,36 @@ import Layout from '../layouts/Layout.astro';
       `${Math.round(current.windSpeed)} mph from ${windDir}`;
 
     // Wind canvas
-    const windCanvas = document.getElementById('wind-canvas') as HTMLCanvasElement;
-    if (windCanvas) {
-      const cleanup = createWindCanvas({
-        canvas: windCanvas,
-        windSpeed: current.windSpeed,
-        windGusts: current.windGusts,
-        windDirection: current.windDirection,
-      });
-      cleanupFns.push(cleanup);
-    }
+    try {
+      const windCanvas = document.getElementById('wind-canvas') as HTMLCanvasElement;
+      if (windCanvas) {
+        const cleanup = createWindCanvas({
+          canvas: windCanvas,
+          windSpeed: current.windSpeed,
+          windGusts: current.windGusts,
+          windDirection: current.windDirection,
+        });
+        cleanupFns.push(cleanup);
+      }
+    } catch (e) { console.error('Wind canvas error:', e); }
 
     // Daylight canvas
-    const daylightCanvas = document.getElementById('daylight-canvas') as HTMLCanvasElement;
-    if (daylightCanvas && daily.length > 0) {
-      const cleanup = setupDaylightCanvas(daylightCanvas, daily[0].sunrise, daily[0].sunset);
-      cleanupFns.push(cleanup);
-    }
+    try {
+      const daylightCanvas = document.getElementById('daylight-canvas') as HTMLCanvasElement;
+      if (daylightCanvas && daily.length > 0) {
+        const cleanup = setupDaylightCanvas(daylightCanvas, daily[0].sunrise, daily[0].sunset);
+        cleanupFns.push(cleanup);
+      }
+    } catch (e) { console.error('Daylight canvas error:', e); }
 
     // Temperature canvas
-    const tempCanvas = document.getElementById('temp-canvas') as HTMLCanvasElement;
-    if (tempCanvas) {
-      const cleanup = setupTemperatureCanvas(tempCanvas, hourly, 48);
-      cleanupFns.push(cleanup);
-    }
+    try {
+      const tempCanvas = document.getElementById('temp-canvas') as HTMLCanvasElement;
+      if (tempCanvas) {
+        const cleanup = setupTemperatureCanvas(tempCanvas, hourly, 48);
+        cleanupFns.push(cleanup);
+      }
+    } catch (e) { console.error('Temp canvas error:', e); }
 
     // 7-day forecast
     renderDailyForecast(daily);

@@ -36,11 +36,15 @@ const WIND_COLORS = {
 
 export function createWindCanvas({ canvas, windSpeed, windGusts, windDirection }: WindCanvasOptions): () => void {
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const size = Math.min(rect.width, rect.height);
+  const parent = canvas.parentElement;
+  const parentW = parent ? parent.clientWidth : 224;
+  const parentH = parent ? parent.clientHeight : 224;
+  const size = Math.max(Math.min(parentW, parentH), 100);
 
   canvas.width = size * dpr;
   canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
 
   const ctx = canvas.getContext('2d');
   if (!ctx) return () => {};
@@ -49,7 +53,7 @@ export function createWindCanvas({ canvas, windSpeed, windGusts, windDirection }
 
   const cx = size / 2;
   const cy = size / 2;
-  const radius = size * 0.38;
+  const radius = size * 0.32;
 
   // Wind blows FROM windDirection, particles move in opposite direction
   const windAngleRad = ((windDirection + 180) * Math.PI) / 180;
