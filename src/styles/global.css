@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* ============================================
+   MERIDIAN - Road Companion
+   Design: Warm earth tones, topographic feel
+   ============================================ */
+
+@theme {
+  /* Earth-inspired palette */
+  --color-sand-50: #faf8f5;
+  --color-sand-100: #f3efe8;
+  --color-sand-200: #e8e0d4;
+  --color-sand-300: #d4c8b5;
+  --color-sand-400: #b8a78e;
+  --color-sand-500: #9c8a6e;
+  --color-sand-600: #7d6e58;
+  --color-sand-700: #5e5242;
+  --color-sand-800: #3f372d;
+  --color-sand-900: #231f19;
+  --color-sand-950: #141210;
+
+  /* Accent: warm amber for highlights */
+  --color-ember-400: #f6a623;
+  --color-ember-500: #e8921a;
+  --color-ember-600: #c47a15;
+
+  /* Sky blue for weather elements */
+  --color-sky-400: #60b4d3;
+  --color-sky-500: #4a9dbd;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: 'DM Serif Display', Georgia, serif;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-sand-950);
+  color: var(--color-sand-200);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Topographic background pattern */
+.topo-bg {
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(246, 166, 35, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(96, 180, 211, 0.03) 0%, transparent 50%);
+  position: relative;
+}
+
+.topo-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 200 Q100 180 200 200 Q300 220 400 200' fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.02'/%3E%3Cpath d='M0 160 Q100 140 200 160 Q300 180 400 160' fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.015'/%3E%3Cpath d='M0 240 Q100 220 200 240 Q300 260 400 240' fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.015'/%3E%3Cpath d='M0 120 Q100 100 200 120 Q300 140 400 120' fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.01'/%3E%3Cpath d='M0 280 Q100 260 200 280 Q300 300 400 280' fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.01'/%3E%3C/svg%3E");
+  background-size: 400px 400px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scroll-driven animations */
+@supports (animation-timeline: scroll()) {
+  .scroll-fade-in {
+    animation: scrollFadeIn linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+
+  .scroll-slide-up {
+    animation: scrollSlideUp linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+
+  .scroll-scale-in {
+    animation: scrollScaleIn linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+
+  @keyframes scrollFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scrollSlideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scrollScaleIn {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+/* Fallback for browsers without scroll-driven animations */
+@supports not (animation-timeline: scroll()) {
+  .scroll-fade-in,
+  .scroll-slide-up,
+  .scroll-scale-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Card glass effect */
+.glass-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+}
+
+.glass-card-warm {
+  background: linear-gradient(
+    135deg,
+    rgba(246, 166, 35, 0.06) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(246, 166, 35, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+}
+
+/* Glow effects */
+.glow-ember {
+  box-shadow: 0 0 20px rgba(246, 166, 35, 0.15), 0 0 60px rgba(246, 166, 35, 0.05);
+}
+
+/* Temperature gradient bar */
+.temp-gradient {
+  background: linear-gradient(
+    90deg,
+    #60b4d3 0%,
+    #7bc67e 25%,
+    #f6d623 50%,
+    #f6a623 75%,
+    #e85a4f 100%
+  );
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* View Transitions */
+::view-transition-old(main-content),
+::view-transition-new(main-content) {
+  animation-duration: 0.3s;
+}
+::view-transition-old(main-content) {
+  animation: fadeSlideOut 0.3s ease-in;
+}
+::view-transition-new(main-content) {
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+@keyframes fadeSlideOut {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+}

@@ -1,0 +1,508 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Meridian - Road Weather Companion">
+  <!-- Loading state -->
+  <div id="loading-state" class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div class="text-center py-20">
+      <div class="inline-flex items-center gap-3 text-sand-400">
+        <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-sm">Getting your location...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div id="error-state" class="max-w-7xl mx-auto px-4 sm:px-6 py-8 hidden">
+    <div class="text-center py-16">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-sand-900 flex items-center justify-center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-sand-500">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
+      </div>
+      <h2 class="text-sand-300 text-lg mb-2">Location needed</h2>
+      <p class="text-sand-500 text-sm mb-6 max-w-md mx-auto">
+        Meridian needs your location to show weather data. You can allow location access or search for a place.
+      </p>
+      <!-- Search input -->
+      <div class="max-w-sm mx-auto relative">
+        <input
+          id="location-search"
+          type="text"
+          placeholder="Search for a city or place..."
+          class="w-full px-4 py-3 bg-sand-900 border border-sand-700 rounded-xl text-sand-200 text-sm placeholder:text-sand-600 focus:outline-none focus:border-ember-500/50 focus:ring-1 focus:ring-ember-500/20"
+        />
+        <div id="search-results" class="absolute top-full left-0 right-0 mt-1 bg-sand-900 border border-sand-700 rounded-xl overflow-hidden hidden z-50">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main weather dashboard -->
+  <div id="weather-dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 py-6 hidden">
+
+    <!-- Hero: Current conditions -->
+    <section class="mb-8 scroll-fade-in">
+      <div class="flex flex-col lg:flex-row gap-6 items-start">
+
+        <!-- Current temperature & conditions -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start gap-4 mb-4">
+            <div>
+              <div class="flex items-baseline gap-2">
+                <span id="current-temp" class="text-7xl sm:text-8xl font-light text-sand-100 tracking-tighter font-display">--</span>
+                <span class="text-3xl text-sand-500 font-light">&deg;F</span>
+              </div>
+              <div class="flex items-center gap-3 mt-1">
+                <span id="current-condition" class="text-sand-400 text-sm">Loading...</span>
+                <span class="text-sand-700">|</span>
+                <span id="feels-like" class="text-sand-500 text-sm">Feels like --&deg;</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick stats row -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+            <div class="glass-card px-4 py-3">
+              <div class="text-xs text-sand-500 mb-1">Humidity</div>
+              <div id="stat-humidity" class="text-lg text-sand-200 font-medium">--%</div>
+            </div>
+            <div class="glass-card px-4 py-3">
+              <div class="text-xs text-sand-500 mb-1">UV Index</div>
+              <div id="stat-uv" class="text-lg text-sand-200 font-medium">--</div>
+            </div>
+            <div class="glass-card px-4 py-3">
+              <div class="text-xs text-sand-500 mb-1">Visibility</div>
+              <div id="stat-visibility" class="text-lg text-sand-200 font-medium">-- mi</div>
+            </div>
+            <div class="glass-card px-4 py-3">
+              <div class="text-xs text-sand-500 mb-1">Pressure</div>
+              <div id="stat-pressure" class="text-lg text-sand-200 font-medium">-- hPa</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wind compass -->
+        <div class="w-full lg:w-auto flex-shrink-0">
+          <div class="glass-card p-4">
+            <div class="text-xs text-sand-500 mb-2 text-center">Wind</div>
+            <div class="w-48 h-48 sm:w-56 sm:h-56 mx-auto">
+              <canvas id="wind-canvas" class="w-full h-full"></canvas>
+            </div>
+            <div id="wind-label" class="text-center text-xs text-sand-500 mt-2">-- mph from --</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Daylight arc -->
+    <section class="mb-8 scroll-slide-up">
+      <div class="glass-card p-5">
+        <h3 class="text-xs text-sand-500 uppercase tracking-wider mb-3">Daylight</h3>
+        <div class="w-full" style="aspect-ratio: 2.8 / 1;">
+          <canvas id="daylight-canvas" class="w-full h-full"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Temperature curve -->
+    <section class="mb-8 scroll-slide-up">
+      <div class="glass-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs text-sand-500 uppercase tracking-wider">48-Hour Forecast</h3>
+          <div class="flex items-center gap-4 text-xs text-sand-600">
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-0.5 bg-ember-400 rounded-full inline-block"></span>
+              Temperature
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-0.5 bg-sky-400/30 rounded-full inline-block"></span>
+              Feels like
+            </span>
+          </div>
+        </div>
+        <div class="w-full" style="aspect-ratio: 3 / 1; min-height: 200px;">
+          <canvas id="temp-canvas" class="w-full h-full"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7-Day forecast -->
+    <section class="mb-8 scroll-slide-up">
+      <h3 class="text-xs text-sand-500 uppercase tracking-wider mb-3 px-1">7-Day Outlook</h3>
+      <div id="daily-forecast" class="space-y-2">
+        <!-- Filled by JS -->
+      </div>
+    </section>
+
+    <!-- Road conditions callout -->
+    <section class="mb-8 scroll-scale-in">
+      <div id="road-alert" class="hidden glass-card-warm p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-ember-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-ember-400">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <path d="M12 9v4"/>
+              <path d="M12 17h.01"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="text-sand-200 text-sm font-medium mb-1">Road Conditions Advisory</h4>
+            <p id="road-alert-text" class="text-sand-400 text-sm leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data freshness -->
+    <div class="text-center py-4">
+      <span id="data-age" class="text-xs text-sand-700">Weather data loading...</span>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import {
+    fetchWeather,
+    getCurrentPosition,
+    reverseGeocode,
+    searchLocations,
+    getWeatherDescription,
+    getWindDirectionLabel,
+    cacheWeatherData,
+    loadCachedWeather,
+    saveLocation,
+    loadLocation,
+    type WeatherData,
+    type WeatherLocation,
+  } from '../scripts/weather-api';
+  import { setupTemperatureCanvas } from '../scripts/canvas-temperature';
+  import { createWindCanvas } from '../scripts/canvas-wind';
+  import { setupDaylightCanvas } from '../scripts/canvas-daylight';
+
+  // State
+  let weatherData: WeatherData | null = null;
+  let cleanupFns: (() => void)[] = [];
+
+  // DOM refs
+  const loadingState = document.getElementById('loading-state')!;
+  const errorState = document.getElementById('error-state')!;
+  const dashboard = document.getElementById('weather-dashboard')!;
+  const locationText = document.getElementById('location-text')!;
+  const locationSearch = document.getElementById('location-search') as HTMLInputElement;
+  const searchResults = document.getElementById('search-results')!;
+
+  function showState(state: 'loading' | 'error' | 'dashboard') {
+    loadingState.classList.toggle('hidden', state !== 'loading');
+    errorState.classList.toggle('hidden', state !== 'error');
+    dashboard.classList.toggle('hidden', state !== 'dashboard');
+  }
+
+  async function loadWeatherForLocation(location: WeatherLocation) {
+    showState('loading');
+    locationText.textContent = location.region
+      ? `${location.name}, ${location.region}`
+      : location.name;
+
+    try {
+      const data = await fetchWeather(location.latitude, location.longitude);
+      weatherData = { ...data, location };
+      cacheWeatherData(weatherData);
+      saveLocation(location);
+      renderDashboard(weatherData);
+      showState('dashboard');
+    } catch (err) {
+      console.error('Weather fetch error:', err);
+      // Try cached data
+      const cached = loadCachedWeather();
+      if (cached) {
+        weatherData = cached;
+        renderDashboard(cached);
+        showState('dashboard');
+      } else {
+        showState('error');
+      }
+    }
+  }
+
+  async function initFromGeolocation() {
+    try {
+      const pos = await getCurrentPosition();
+      const { latitude, longitude } = pos.coords;
+      const geo = await reverseGeocode(latitude, longitude);
+      const location: WeatherLocation = {
+        latitude,
+        longitude,
+        name: geo.name,
+        region: geo.region,
+        country: geo.country,
+      };
+      await loadWeatherForLocation(location);
+    } catch {
+      // Check for cached location
+      const savedLoc = loadLocation();
+      if (savedLoc) {
+        await loadWeatherForLocation(savedLoc);
+      } else {
+        showState('error');
+      }
+    }
+  }
+
+  function renderDashboard(data: WeatherData) {
+    // Clean up previous canvas animations
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+
+    const { current, hourly, daily } = data;
+
+    // Current conditions
+    document.getElementById('current-temp')!.textContent = Math.round(current.temperature).toString();
+    document.getElementById('current-condition')!.textContent = getWeatherDescription(current.weatherCode).label;
+    document.getElementById('feels-like')!.textContent = `Feels like ${Math.round(current.feelsLike)}\u00B0`;
+
+    // Stats
+    document.getElementById('stat-humidity')!.textContent = `${current.humidity}%`;
+    document.getElementById('stat-uv')!.textContent = current.uvIndex.toFixed(1);
+    document.getElementById('stat-visibility')!.textContent = `${(current.visibility / 1609.34).toFixed(1)} mi`;
+    document.getElementById('stat-pressure')!.textContent = `${Math.round(current.pressure)} hPa`;
+
+    // Wind label
+    const windDir = getWindDirectionLabel(current.windDirection);
+    document.getElementById('wind-label')!.textContent =
+      `${Math.round(current.windSpeed)} mph from ${windDir}`;
+
+    // Wind canvas
+    const windCanvas = document.getElementById('wind-canvas') as HTMLCanvasElement;
+    if (windCanvas) {
+      const cleanup = createWindCanvas({
+        canvas: windCanvas,
+        windSpeed: current.windSpeed,
+        windGusts: current.windGusts,
+        windDirection: current.windDirection,
+      });
+      cleanupFns.push(cleanup);
+    }
+
+    // Daylight canvas
+    const daylightCanvas = document.getElementById('daylight-canvas') as HTMLCanvasElement;
+    if (daylightCanvas && daily.length > 0) {
+      const cleanup = setupDaylightCanvas(daylightCanvas, daily[0].sunrise, daily[0].sunset);
+      cleanupFns.push(cleanup);
+    }
+
+    // Temperature canvas
+    const tempCanvas = document.getElementById('temp-canvas') as HTMLCanvasElement;
+    if (tempCanvas) {
+      const cleanup = setupTemperatureCanvas(tempCanvas, hourly, 48);
+      cleanupFns.push(cleanup);
+    }
+
+    // 7-day forecast
+    renderDailyForecast(daily);
+
+    // Road conditions advisory
+    checkRoadConditions(current, hourly);
+
+    // Data freshness
+    const age = data.fetchedAt;
+    document.getElementById('data-age')!.textContent =
+      `Updated ${age.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  }
+
+  function renderDailyForecast(daily: WeatherData['daily']) {
+    const container = document.getElementById('daily-forecast')!;
+    const tempMin = Math.min(...daily.map(d => d.temperatureMin));
+    const tempMax = Math.max(...daily.map(d => d.temperatureMax));
+    const tempRange = tempMax - tempMin;
+
+    container.innerHTML = daily.map((day, i) => {
+      const desc = getWeatherDescription(day.weatherCode);
+      const isToday = i === 0;
+      const dayName = isToday
+        ? 'Today'
+        : day.date.toLocaleDateString('en-US', { weekday: 'short' });
+
+      // Temperature bar position
+      const lowPct = ((day.temperatureMin - tempMin) / tempRange) * 100;
+      const highPct = ((day.temperatureMax - tempMin) / tempRange) * 100;
+
+      const precipInfo = day.precipitationProbabilityMax > 20
+        ? `<span class="text-sky-400 text-xs ml-1">${day.precipitationProbabilityMax}%</span>`
+        : '';
+
+      return `
+        <div class="glass-card px-4 py-3 flex items-center gap-4 ${isToday ? 'ring-1 ring-ember-500/20' : ''}">
+          <div class="w-12 text-sm ${isToday ? 'text-sand-100 font-medium' : 'text-sand-400'}">${dayName}</div>
+
+          <div class="w-20 flex items-center gap-1.5">
+            <span class="text-xs text-sand-500">${desc.label}</span>
+            ${precipInfo}
+          </div>
+
+          <div class="flex-1 flex items-center gap-3 min-w-0">
+            <span class="text-sm text-sand-500 w-8 text-right">${Math.round(day.temperatureMin)}&deg;</span>
+            <div class="flex-1 h-1.5 bg-sand-800 rounded-full relative overflow-hidden">
+              <div
+                class="absolute h-full rounded-full"
+                style="left: ${lowPct}%; right: ${100 - highPct}%; background: linear-gradient(90deg, ${getBarColor(day.temperatureMin)}, ${getBarColor(day.temperatureMax)});"
+              ></div>
+            </div>
+            <span class="text-sm text-sand-200 w-8 font-medium">${Math.round(day.temperatureMax)}&deg;</span>
+          </div>
+
+          <div class="hidden sm:flex items-center gap-2 text-xs text-sand-500 w-20 justify-end">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/>
+            </svg>
+            ${Math.round(day.windSpeedMax)} mph
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function getBarColor(temp: number): string {
+    if (temp <= 32) return '#60b4d3';
+    if (temp <= 50) return '#7bc67e';
+    if (temp <= 70) return '#d4c840';
+    if (temp <= 85) return '#f6a623';
+    return '#e85a4f';
+  }
+
+  function checkRoadConditions(
+    current: WeatherData['current'],
+    hourly: WeatherData['hourly']
+  ) {
+    const alerts: string[] = [];
+    const next12h = hourly.slice(0, 12);
+
+    // Freezing conditions
+    if (current.temperature <= 32 || current.feelsLike <= 28) {
+      alerts.push('Freezing temperatures. Watch for black ice on bridges and overpasses.');
+    }
+
+    // High winds
+    if (current.windGusts >= 40) {
+      alerts.push(`Wind gusts of ${Math.round(current.windGusts)} mph. Use caution, especially with high-profile vehicles.`);
+    } else if (current.windSpeed >= 25) {
+      alerts.push(`Sustained winds at ${Math.round(current.windSpeed)} mph. Be mindful of crosswinds.`);
+    }
+
+    // Low visibility
+    if (current.visibility < 1609) { // less than 1 mile
+      alerts.push('Very low visibility. Reduce speed and use fog lights.');
+    } else if (current.visibility < 4828) { // less than 3 miles
+      alerts.push('Reduced visibility. Drive with extra caution.');
+    }
+
+    // Heavy precipitation coming
+    const heavyPrecip = next12h.find(h => h.precipitation > 0.3);
+    if (heavyPrecip) {
+      const hours = Math.round((heavyPrecip.time.getTime() - Date.now()) / 3600000);
+      if (hours > 0) {
+        alerts.push(`Heavy precipitation expected in approximately ${hours} hour${hours > 1 ? 's' : ''}.`);
+      }
+    }
+
+    // Extreme heat
+    if (current.temperature >= 100) {
+      alerts.push('Extreme heat. Keep engine coolant topped off and monitor tire pressure.');
+    } else if (current.temperature >= 95) {
+      alerts.push('High heat advisory. Stay hydrated and monitor vehicle temperature gauges.');
+    }
+
+    // High UV
+    if (current.uvIndex >= 8) {
+      alerts.push('Very high UV index. Extended sun exposure is a burn risk.');
+    }
+
+    const alertEl = document.getElementById('road-alert')!;
+    const alertText = document.getElementById('road-alert-text')!;
+
+    if (alerts.length > 0) {
+      alertText.textContent = alerts.join(' ');
+      alertEl.classList.remove('hidden');
+    } else {
+      alertEl.classList.add('hidden');
+    }
+  }
+
+  // Location search
+  let searchTimeout: ReturnType<typeof setTimeout>;
+  locationSearch?.addEventListener('input', (e) => {
+    const query = (e.target as HTMLInputElement).value.trim();
+    clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+      searchResults.classList.add('hidden');
+      return;
+    }
+
+    searchTimeout = setTimeout(async () => {
+      const results = await searchLocations(query);
+      if (results.length === 0) {
+        searchResults.classList.add('hidden');
+        return;
+      }
+
+      searchResults.innerHTML = results.map(r => `
+        <button
+          class="w-full px-4 py-3 text-left text-sm text-sand-300 hover:bg-sand-800 transition-colors flex items-center gap-2"
+          data-lat="${r.latitude}"
+          data-lon="${r.longitude}"
+          data-name="${r.name}"
+          data-region="${r.region || ''}"
+          data-country="${r.country || ''}"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-sand-500 flex-shrink-0">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <span>${r.name}${r.region ? ', ' + r.region : ''}${r.country ? ' (' + r.country + ')' : ''}</span>
+        </button>
+      `).join('');
+
+      searchResults.classList.remove('hidden');
+
+      // Attach click handlers
+      searchResults.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const loc: WeatherLocation = {
+            latitude: parseFloat(btn.getAttribute('data-lat')!),
+            longitude: parseFloat(btn.getAttribute('data-lon')!),
+            name: btn.getAttribute('data-name')!,
+            region: btn.getAttribute('data-region') || undefined,
+            country: btn.getAttribute('data-country') || undefined,
+          };
+          searchResults.classList.add('hidden');
+          loadWeatherForLocation(loc);
+        });
+      });
+    }, 300);
+  });
+
+  // Close search results when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!(e.target as Element).closest('#location-search') && !(e.target as Element).closest('#search-results')) {
+      searchResults.classList.add('hidden');
+    }
+  });
+
+  // Refresh button
+  document.getElementById('refresh-btn')?.addEventListener('click', () => {
+    if (weatherData?.location) {
+      loadWeatherForLocation(weatherData.location);
+    } else {
+      initFromGeolocation();
+    }
+  });
+
+  // Initialize
+  initFromGeolocation();
+</script>
